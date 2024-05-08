@@ -1,0 +1,597 @@
+using System;
+using System.Linq;
+using Npgsql;
+using System.Globalization;
+using System.Data;
+using ConsoleTables;
+using Microsoft.EntityFrameworkCore;
+using pr2.Models;
+
+class Program
+{
+    static void Main()
+    {
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("\nTask 2.1");
+        Console.ResetColor();
+        Task_2_1();
+
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("\nTask 2.2");
+        Console.ResetColor();
+        Task_2_2(2);
+
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("\nTask 2.3");
+        Console.ResetColor();
+        Task_2_3("Ленинский");
+
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("\nTask 2.4");
+        Console.ResetColor();
+        Task_2_4("Биржев");
+
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("\nTask 2.5");
+        Console.ResetColor();
+        Task_2_5();
+
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("\nTask 2.6");
+        Console.ResetColor();
+        Task_2_6();
+
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("\nTask 2.7");
+        Console.ResetColor();
+        Task_2_7();
+
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("\nTask 2.8");
+        Console.ResetColor();
+        Task_2_8();
+
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("\nTask 2.9");
+        Console.ResetColor();
+        Task_2_9("Антон", "Биржев");
+
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("\nTask 2.10");
+        Console.ResetColor();
+        Task_2_10();
+
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("\nTask 2.11");
+        Console.ResetColor();
+        Task_2_11();
+
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("\nTask 2.12");
+        Console.ResetColor();
+        Task_2_12();
+
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("\nTask 2.13");
+        Console.ResetColor();
+        Task_2_13();
+
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("\nTask 2.14");
+        Console.ResetColor();
+        Task_2_14();
+
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("\nTask 2.15");
+        Console.ResetColor();
+        Task_2_15();
+
+        Console.ReadKey();
+    }
+
+    static void Task_2_1()
+    {
+        using (var context = new PostgresContext())
+        {
+            // Указанный район
+            string districtName = "Кировский";
+
+            // Стоимость от и до
+            double minPrice = 1000000;
+            double maxPrice = 2000000;
+
+            // Получаем объекты недвижимости, удовлетворяющие условиям
+            var estateObjects = context.Objects
+                .Where(obj => obj.DistrictNavigation.Name == districtName &&
+                              obj.Cost >= minPrice &&
+                              obj.Cost <= maxPrice)
+                .OrderByDescending(obj => obj.Cost)
+                .Select(obj => new
+                {
+                    obj.Adress,
+                    obj.Square,
+                    obj.Floor,
+                    obj.Cost
+                })
+                .ToList();
+
+            Console.WriteLine($"Объекты недвижимости в районе {districtName}, стоимостью от {minPrice} до {maxPrice}:");
+
+            var table = new ConsoleTable("Адрес", "Площадь", "Этаж", "Стоимость");
+
+            foreach (var estateObject in estateObjects)
+            {
+                table.AddRow(estateObject.Adress, estateObject.Square, estateObject.Floor, estateObject.Cost);
+            }
+            table.Write();
+            Console.WriteLine();
+        }
+    }
+
+    static void Task_2_2(int roomsCount)
+    {
+        using (var context = new PostgresContext())
+        {
+            var realtors = context.Sales
+                .Where(sale => sale.ObjCodeNavigation.Cellcount == roomsCount)
+                .Select(sale => new
+                {
+                    sale.CodeReNavigation.LastName,
+                    sale.CodeReNavigation.FirstName,
+                    sale.CodeReNavigation.Patronymic
+                })
+                .Distinct()
+                .ToList();
+
+            if (realtors.Any())
+            {
+                Console.WriteLine($"Риэлторы, продавшие двухкомнатные объекты недвижимости:");
+                foreach (var realtor in realtors)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGreen;
+                    Console.Write($"{realtor.LastName} {realtor.FirstName} {realtor.Patronymic}\n");
+                    Console.ResetColor();
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Риэлторы, продавшие двухкомнатные объекты недвижимости:");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("Не продано");
+                Console.ResetColor();
+            }
+        }
+    }
+
+    static void Task_2_3(string targetDistrict)
+    {
+        int numberOfRooms = 2;
+
+        // Создаем контекст базы данных
+        using (var context = new PostgresContext())
+        {
+            // Выполняем запрос
+            var totalCost = context.Objects
+                .Where(obj => obj.DistrictNavigation.Name == targetDistrict && obj.Cellcount == numberOfRooms)
+                .Sum(obj => obj.Cost);
+
+            if (totalCost > 0)
+            {
+                // Выводим результат
+                Console.Write($"Общая стоимость двухкомнатных объектов недвижимости в районе {targetDistrict}: ");
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine($"{totalCost}");
+                Console.ResetColor();
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"В данном райроне не продавались двухкомнатные квартиры");
+                Console.ResetColor();
+            }
+        }
+    }
+
+
+    static void Task_2_4(string realtorLastName)
+    {
+        // Создаем контекст базы данных
+        using (var context = new PostgresContext())
+        {
+            // Находим риэлтора по имени
+            var realtor = context.Realtors.FirstOrDefault(r => r.LastName == realtorLastName);
+
+            if (realtor != null)
+            {
+                // Находим максимальную и минимальную стоимость объектов недвижимости, проданных этим риэлтором
+                var maxPrice = context.Sales
+                    .Where(sale => sale.CodeRe == realtor.ReCode)
+                    .SelectMany(sale => context.Objects
+                        .Where(property => property.Objcode == sale.ObjCode)
+                        .Select(property => property.Cost))
+                    .Max();
+
+                var minPrice = context.Sales
+                    .Where(sale => sale.CodeRe == realtor.ReCode)
+                    .SelectMany(sale => context.Objects
+                        .Where(property => property.Objcode == sale.ObjCode)
+                        .Select(property => property.Cost))
+                    .Min();
+
+                // Выводим результат
+                Console.Write($"Максимальная стоимость объекта недвижимости, проданного риэлтором {realtorLastName}: ");
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine(minPrice);
+                Console.ResetColor();
+                Console.Write($"Минимальная стоимость объекта недвижимости, проданного риэлтором {realtorLastName}: ");
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine(maxPrice);
+                Console.ResetColor();
+            }
+            else
+            {
+                Console.Write($"Риэлтор с фамилией ");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write(realtorLastName);
+                Console.ResetColor();
+                Console.WriteLine($" не найден.");
+
+            }
+        }
+    }
+
+    static void Task_2_5()
+    {
+        // Указываем данные для фильтрации
+        string objectType = "1";
+        string realtorName = "Иванов";
+        string evaluationCriterion = "Безопасность";
+
+        // Создаем контекст базы данных
+        using (var context = new PostgresContext())
+        {
+            // Находим риэлтора по имени
+            var realtor = context.Realtors.FirstOrDefault(r => r.LastName == realtorName);
+
+            if (realtor != null)
+            {
+                // Выполняем запрос для получения средней оценки
+                var averageRating = context.Sales
+                    .Where(sale => sale.CodeRe == realtor.ReCode)
+                    .SelectMany(sale => context.Objects
+                        .Where(property => property.Objcode == sale.ObjCode &&
+                                           property.TypeNavigation.Nametype == objectType)
+                        .SelectMany(property => context.Evaluations
+                            .Where(evaluation => evaluation.ObjCode == property.Objcode)
+                            .Where(evaluation => evaluation.CrCodeNavigation.Name == evaluationCriterion))
+                        .Select(evaluation => evaluation.Evulation))
+                    .Average();
+
+                // Выводим результат
+                Console.WriteLine($"Средняя оценка апартаментов по критерию '{evaluationCriterion}', проданных риэлтором {realtorName}: {averageRating}");
+            }
+            else
+            {
+                Console.Write($"Риэлтор с фамилией ");
+                Console.Write(realtorName);
+                Console.ResetColor();
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($" НЕ НАЙДЕН!");
+                Console.ResetColor();
+            }
+        }
+    }
+
+
+    static void Task_2_6()
+    {
+        // Создаем контекст базы данных
+        using (var context = new PostgresContext())
+        {
+            var floor = 2; // Задаем этаж
+
+            var propertiesByDistrict = context.Objects
+                .Where(property => property.Floor == floor) // Фильтруем объекты недвижимости по этажу
+                .GroupBy(property => property.DistrictNavigation.Name) // Группируем по названию района
+                .Select(group => new {
+                    District = group.Key,
+                    Count = group.Count() // Подсчитываем количество объектов недвижимости в каждом районе
+                });
+
+            foreach (var districtInfo in propertiesByDistrict)
+            {
+                Console.Write($"{districtInfo.District} -");
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($" {districtInfo.Count}");
+                Console.ResetColor();
+            }
+        }
+    }
+
+    static void Task_2_7()
+    {
+        using (var context = new PostgresContext())
+        {
+            var result = from sale in context.Sales
+                         where sale.ObjCodeNavigation.TypeNavigation.Nametype == "Name"
+                         group sale by new { sale.CodeReNavigation.FirstName, sale.CodeReNavigation.LastName } into g
+                         select new
+                         {
+                             RealtorName = g.Key.FirstName + " " + g.Key.LastName,
+                             NumberOfSales = g.Count()
+                         };
+
+            var table = new ConsoleTable("ФИО риэлтора", "количество квартир");
+
+            foreach (var item in result)
+            {
+                table.AddRow(item.RealtorName, item.NumberOfSales);
+            }
+            table.Write();
+            Console.WriteLine();
+        }
+    }
+
+    static void Task_2_8()
+    {
+        using (var context = new PostgresContext())
+        {
+            var result = context.Objects
+                .GroupBy(obj => obj.DistrictNavigation.Name)
+                .Select(group => new
+                {
+                    District = group.Key,
+                    TopThreeExpensiveProperties = group.OrderByDescending(obj => obj.Cost)
+                                                        .ThenBy(obj => obj.Floor)
+                                                        .Take(3)
+                                                        .Select(obj => new
+                                                        {
+                                                            Address = obj.Adress,
+                                                            Cost = obj.Cost,
+                                                            Floor = obj.Floor
+                                                        })
+                });
+
+            foreach (var district in result)
+            {
+                var table = new ConsoleTable("Адрес", "Стоимость", "Этаж");
+
+                foreach (var property in district.TopThreeExpensiveProperties)
+                {
+                    table.AddRow(property.Address, property.Cost, property.Floor);
+                }
+
+                Console.WriteLine($"Название района: {district.District}");
+                table.Write();
+                Console.WriteLine();
+            }
+        }
+    }
+
+    static void Task_2_9(string firstName, string lastName)
+    {
+        using (var context = new PostgresContext())
+        {
+
+            var realtor = context.Realtors.FirstOrDefault(r => r.FirstName == firstName && r.LastName == lastName);
+
+            if (realtor != null)
+            {
+                var salesByYear = context.Sales.Where(s => s.CodeRe == realtor.ReCode)
+                                               .GroupBy(s => s.Date.Value.Year)
+                                               .Select(g => new
+                                               {
+                                                   Year = g.Key,
+                                                   SalesCount = g.Count()
+                                               })
+                                               .Where(x => x.SalesCount > 2);
+
+                if (salesByYear.Any())
+                {
+                    Console.WriteLine($"Года, в которых риэлтор {firstName} {lastName} продал больше 2 объектов недвижимости:");
+                    foreach (var item in salesByYear)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine($"{item.Year}");
+                        Console.ResetColor();
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Риэлтор {firstName} {lastName} не продал больше 2 объектов за всё время работы.");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Риэлтор с ФИО {firstName} {lastName} не найден.");
+            }
+        }
+    }
+
+    static void Task_2_10()
+    {
+        using (var context = new PostgresContext())
+        {
+            var yearsWithTwoToThreeSales = context.Sales
+                .Where(s => s.Date.HasValue) // Ensure the Date is not null
+                .GroupBy(s => s.Date.Value.Year) // Access the Year of the Date
+                .Select(g => new
+                {
+                    Year = g.Key,
+                    SalesCount = g.Count()
+                })
+                .Where(x => x.SalesCount >= 2 && x.SalesCount <= 3);
+
+            if (yearsWithTwoToThreeSales.Any())
+            {
+                Console.Write("Годы, в которых было размещено от 2 до 3 объектов недвижимости: ");
+                foreach (var item in yearsWithTwoToThreeSales)
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"{item.Year}");
+                    Console.ResetColor();
+                }
+            }
+            else
+            {
+                Console.WriteLine("Нет годов, в которых было размещено от 2 до 3 объектов недвижимости.");
+            }
+        }
+    }
+
+    static void Task_2_11()
+    {
+        using (var context = new PostgresContext())
+        {
+            var propertiesWithin20PercentDifference = context.Objects
+                .Join(context.Sales,
+                      obj => obj.Objcode,
+                      sale => sale.ObjCode,
+                      (obj, sale) => new { Object = obj, Sale = sale })
+                .Where(o => o.Object.Cost.HasValue && o.Sale.Price.HasValue &&
+                            Math.Abs((o.Object.Cost.Value - o.Sale.Price.Value)) / o.Object.Cost.Value <= 0.2d) // Corrected to use decimal suffix
+                .Select(o => new
+                {
+                    Address = o.Object.Adress,
+                    DistrictName = o.Object.DistrictNavigation.Name
+                })
+                .ToList();
+
+            if (propertiesWithin20PercentDifference.Any())
+            {
+                Console.WriteLine("Информация об объектах недвижимости с разницей в стоимости не более 20%:");
+
+                var table = new ConsoleTable("Адрес", "Название района");
+
+                foreach (var property in propertiesWithin20PercentDifference)
+                {
+                    table.AddRow(property.Address, property.DistrictName);
+                }
+                table.Write();
+                Console.WriteLine();
+            }
+            else
+            {
+                Console.WriteLine("Нет объектов недвижимости с разницей в стоимости не более 20%.");
+            }
+        }
+    }
+
+    static void Task_2_12()
+    {
+        using (var context = new PostgresContext())
+        {
+            // Fetching object details while ensuring that cost and square are not null
+            var propertiesQuery = context.Objects
+                .Where(obj => obj.Cost.HasValue && obj.Square.HasValue)
+                .Select(obj => new
+                {
+                    ObjectCode = obj.Objcode, // To be used in joining with Sales
+                    Address = obj.Adress,
+                    DistrictName = obj.DistrictNavigation != null ? obj.DistrictNavigation.Name : "Unknown District",
+                    PricePerSquareMeter = obj.Cost.Value / obj.Square.Value
+                })
+                .ToList(); // Evaluating locally due to need of complex operations client-side
+
+            // Validating that the joining conditions include the ObjectCode
+            // And make sure the sales point to actual objects before attempting to reference attributes
+            var propertiesBelowAveragePrice = propertiesQuery
+                .Join(context.Sales,
+                    obj => obj.ObjectCode, // Join on ObjectCode instead of Address
+                    sale => sale.ObjCode, // Adjust according to the correct column in Sales
+                    (obj, sale) => new
+                    {
+                        obj.Address,
+                        obj.DistrictName,
+                        obj.PricePerSquareMeter,
+                        SalePrice = sale.Price
+                    })
+                .Where(x => x.PricePerSquareMeter < (x.SalePrice * 0.2))
+                .ToList();
+
+            // Output results
+            if (propertiesBelowAveragePrice.Any())
+            {
+                Console.WriteLine("Адреса квартир, стоимость 1м2 которых меньше средней по району:");
+
+                var table = new ConsoleTable("Адрес", "Название района");
+
+                foreach (var property in propertiesBelowAveragePrice)
+                {
+                    table.AddRow(property.Address, property.DistrictName);
+                }
+                table.Write();
+                Console.WriteLine();
+            }
+            else
+            {
+                Console.WriteLine("Нет квартир, стоимость 1м2 которых меньше средней по району.");
+            }
+        }
+    }
+
+    static void Task_2_13()
+    {
+        using (var context = new PostgresContext())
+        {
+            // Получаем текущий год
+            int currentYear = DateTime.Now.Year;
+
+            // LINQ запрос для получения ФИО риэлторов, которые ничего не продали в текущем году
+            var realtorsNotSoldThisYear = context.Realtors
+                .Where(realtor => !context.Sales.Any(sale => sale.CodeRe == realtor.ReCode && sale.Date.Value.Year == currentYear))
+                .Select(realtor => new
+                {
+                    FullName = $"{realtor.LastName} {realtor.FirstName} {realtor.Patronymic}"
+                })
+                .ToList();
+
+            // Вывод результатов
+            if (realtorsNotSoldThisYear.Any())
+            {
+                Console.Write("Риэлторы, которые ничего не продали в текущем году: ");
+                foreach (var realtor in realtorsNotSoldThisYear)
+                {
+                    Console.WriteLine(realtor.FullName);
+                }
+            }
+            else
+            {
+                Console.WriteLine("Нет риэлторов, которые ничего не продали в текущем году.");
+            }
+        }
+    }
+
+    static void Task_2_14()
+    {
+        using (var db = new PostgresContext())
+        {
+            var salesQuery = from sale in db.Sales
+                             join obj in db.Objects on sale.ObjCode equals obj.Objcode
+                             join district in db.Districts on obj.District equals district.Districtcode
+                             where sale.Date.Value.Year == DateTime.Now.Year || sale.Date.Value.Year == DateTime.Now.Year - 1
+                             group new { sale, district } by new { district.Name, Year = sale.Date.Value.Year } into grouped
+                             select new
+                             {
+                                 District = grouped.Key.Name,
+                                 Year = grouped.Key.Year,
+                                 SalesCount = grouped.Count(),
+                                 YearlyChange = grouped.Key.Year == DateTime.Now.Year ?
+                                     (grouped.Where(g => g.sale.Date.Value.Year == DateTime.Now.Year - 1).Count() != 0 ?
+                                     (double)(grouped.Count() - grouped.Where(g => g.sale.Date.Value.Year == DateTime.Now.Year - 1).Count()) / grouped.Where(g => g.sale.Date.Value.Year == DateTime.Now.Year - 1).Count() * 100 :
+                                     0) :
+                                     0 // Предыдущий год не важен для текущего года
+                             };
+
+            var table = new ConsoleTable("Название района", "Год", "Количество продаж", "Изменение в %");
+            foreach (var item in salesQuery)
+            {
+                table.AddRow(item.District, item.Year, item.SalesCount, item.YearlyChange);
+            }
+            table.Write();
+            Console.WriteLine("Временно не работает...");
+        }
+    }
+}
+
+
