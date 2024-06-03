@@ -1,0 +1,30 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+<h5>Добро пожаловать, @User.Identity.Name!</h5>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>От кого</th>
+            <th>Тема</th>
+            <th>Дата отправки</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var message in Model.Messages)
+        {
+            <tr>
+                <td>@message.From</td>
+                <td>@message.Subject</td>
+                <td>@message.SentDate.ToShortDateString()</td>
+                <td>
+                    <a href="#" data-toggle="modal" data-target="#messageModal" data-message-id="@message.Id">Открыть</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
